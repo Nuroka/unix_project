@@ -105,6 +105,8 @@ int main() {
             }
         }
 
+
+        //result
         if (choice == 2 && ai == 1) { // computer win
             C_money += P_bet;
             P_money -= P_bet;

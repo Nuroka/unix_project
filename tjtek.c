@@ -112,8 +112,8 @@ int main() {
             P_money -= P_bet;
             printf("Player Die\n");
             printf("Computer Win\n");
-            printf("Computer card 1 : %d\n", pae1[a]);
-            printf("Computer card 2 : %d\n", pae2[b]);
+            printf("Computer card 1 : %d\n", pae1[a]); //dddddddddddddddddddddddddddd
+            printf("Computer card 2 : %d\n", pae2[b]); // hello kkkkkkkkkk
             printf("P_money : %d\n", P_money);
             printf("C_money : %d\n", C_money);
         } else if (choice == 1 && ai == 2) { // player win

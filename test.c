@@ -43,7 +43,7 @@ void divider(struct card *all, struct card *player, struct card *com) {
     player[1] = all[1];
     com[0] = all[2];
     com[1] = all[3];
-    /*
+    
     // 카드 내림차순 재구성
     if (player[0].num > player[1].num) {
         struct card temp;
@@ -57,7 +57,39 @@ void divider(struct card *all, struct card *player, struct card *com) {
         com[0] = com[1];
         com[1] = temp;
     }
-    */
+    
+}
+
+// 손패 계산
+int get_score(struct card *hand) {
+    
+    // 38광땡
+    if (hand[0].num == 3 && hand[1].num == 8 && hand[0].special == true && hand[1].special == true) {
+        return 3800; // 가장 높은 점수
+    }
+
+    // 13광땡, 18광땡
+    if ((hand[0].num == 1 && hand[1].num == 3 && hand[0].special == true && hand[1].special == true) || 
+        (hand[0].num == 1 && hand[1].num == 8 && hand[0].special == true && hand[1].special == true)) {
+        return 3000;
+    }
+
+    // 땡
+    if (hand[0].num == hand[1].num) {
+        return 1000 + hand[0].num; // 땡 점수 (1000 + 숫자)
+    }
+
+    // 특수 족보 판별
+    if (hand[0].num == 1 && hand[1].num == 2) return 801; // 알리
+    if (hand[0].num == 1 && hand[1].num == 4) return 802; // 독사
+    if (hand[0].num == 1 && hand[1].num == 9) return 803; // 구삥
+    if (hand[0].num == 1 && hand[1].num == 10) return 804; // 장삥
+    if (hand[0].num == 4 && hand[1].num == 10) return 805; // 장사
+    if (hand[0].num == 4 && hand[1].num == 6) return 806; // 세륙
+
+    // 끗 판별
+    int sum = (hand[0].num + hand[1].num) % 10;
+    return sum; // 끗 점수 (0~9)
 }
 
 int main(void) {
@@ -68,5 +100,7 @@ int main(void) {
            player[0].num, player[0].special, player[1].num, player[1].special);
     printf("Com's Cards: %d (Special: %d), %d (Special: %d)\n",
            com[0].num, com[0].special, com[1].num, com[1].special);
+    printf("%d, %d\n", get_score(player), get_score(com));
+
     return 0;
 }

@@ -43,6 +43,21 @@ void divider(struct card *all, struct card *player, struct card *com) {
     player[1] = all[1];
     com[0] = all[2];
     com[1] = all[3];
+    /*
+    // 카드 내림차순 재구성
+    if (player[0].num > player[1].num) {
+        struct card temp;
+        temp = player[0];
+        player[0] = player[1];
+        player[1] = temp;
+    }
+    if (com[0].num > com[1].num) {
+        struct card temp;
+        temp = com[0];
+        com[0] = com[1];
+        com[1] = temp;
+    }
+    */
 }
 
 int main(void) {

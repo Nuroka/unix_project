@@ -80,12 +80,12 @@ int get_score(struct card *hand) {
     }
 
     // 특수 족보 판별
-    if (hand[0].num == 1 && hand[1].num == 2) return 801; // 알리
-    if (hand[0].num == 1 && hand[1].num == 4) return 802; // 독사
-    if (hand[0].num == 1 && hand[1].num == 9) return 803; // 구삥
-    if (hand[0].num == 1 && hand[1].num == 10) return 804; // 장삥
-    if (hand[0].num == 4 && hand[1].num == 10) return 805; // 장사
-    if (hand[0].num == 4 && hand[1].num == 6) return 806; // 세륙
+    if (hand[0].num == 1 && hand[1].num == 2) return 806; // 알리
+    if (hand[0].num == 1 && hand[1].num == 4) return 805; // 독사
+    if (hand[0].num == 1 && hand[1].num == 9) return 804; // 구삥
+    if (hand[0].num == 1 && hand[1].num == 10) return 803; // 장삥
+    if (hand[0].num == 4 && hand[1].num == 10) return 802; // 장사
+    if (hand[0].num == 4 && hand[1].num == 6) return 801; // 세륙
 
     // 끗 판별
     int sum = (hand[0].num + hand[1].num) % 10;

@@ -17,10 +17,12 @@ typedef struct {
     int computer_choice;
     int player_money;
     int computer_money;
-    int player_card1;
-    int player_card2;
-    int computer_card1;
-    int computer_card2;
 } GameState;
+
+typedef struct {
+    int num;
+    bool special;
+    char name[15];
+} Card;
 
 #endif // GAME_PROTOCOL_H

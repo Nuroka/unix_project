@@ -7,6 +7,7 @@
 struct card{
     int num;
     bool special;
+    char name[15];
 };
 
 struct card player[2];
@@ -29,9 +30,13 @@ struct card *init(void){
                       1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     bool power[] = {false, false, false, false, false, false, false, false, false, false,
                     true, false, true, true, false, false, true, true, true, false};
+    char* name[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                    "1+", "2+", "3+", "4+", "5+", "6+", "7+", "8+", "9+", "10+"};
     for (int i = 0; i < 20; i++){
         all[i].num = card_num[i];
         all[i].special = power[i];
+        strncpy(all[i].name, name[i], sizeof(all[i].name) - 1); // 문자열 복사
+        all[i].name[sizeof(all[i].name) - 1] = '\0';
     }
     shuffle(all);
     return all;
@@ -94,13 +99,15 @@ int get_score(struct card *hand) {
 
 int main(void) {
     srand(time(NULL));  // 난수 생성
-    struct card *all = init();
+    struct card *all;
+    all = init();
     divider(all, player, com);
     printf("Player's Cards: %d (Special: %d), %d (Special: %d)\n",
            player[0].num, player[0].special, player[1].num, player[1].special);
     printf("Com's Cards: %d (Special: %d), %d (Special: %d)\n",
            com[0].num, com[0].special, com[1].num, com[1].special);
     printf("%d, %d\n", get_score(player), get_score(com));
+    printf("%s\n", player[0].name);
 
     return 0;
 }

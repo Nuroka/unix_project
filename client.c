@@ -3,17 +3,28 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 #include "game_protocol.h"
+
+Card player[2];
+Card com[2];
 
 void play_game(int sock) {
     GameState state;
 
     while (1) {
         // 서버로부터 상태 수신
-        recv(sock, &state, sizeof(state), 0);
+        /*recv(sock, &state, sizeof(state), 0);
+        recv(sock, &player, sizeof(player), 0);*/
+        int header;
+        recv(sock, &header, sizeof(header), 0);       // 헤더 수신
+        recv(sock, &state, header, 0);                // 상태 수신
+
+        recv(sock, &header, sizeof(header), 0);       // 헤더 수신
+        recv(sock, &player, header, 0);               // 카드 수신
 
         // 현재 상태 출력
-        printf("\nYour cards: %d, %d\n", state.player_card1, state.player_card2);
+        printf("\nYour cards: %s, %s\n", player[0].name, player[1].name);
         printf("Your money: %d, Computer money: %d\n", state.player_money, state.computer_money);
 
         // 행동 선택

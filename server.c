@@ -142,10 +142,17 @@ void handle_client(int client_sock) {
             int player_score = get_score(player);
             int computer_score = get_score(com);
 
+            // 이겼을때
             if (player_score > computer_score) {
                 state.player_money += state.player_bet;
                 state.computer_money -= state.player_bet;
-            } else {
+            } else { // 졌을때
+                // 플레이어가 배팅한 금액이 본인이 보유한 금액보다 더 클 경우 에러 발생
+                if(state.player_bet > state.player_money){
+                    printf("배팅한 금액이 보유한 금액보다 더 큽니다");
+                    //카드 분배부터 다시?
+                    continue;
+                }
                 state.computer_money += state.player_bet;
                 state.player_money -= state.player_bet;
             }
@@ -156,28 +163,55 @@ void handle_client(int client_sock) {
         send(client_sock, &state, sizeof(state), 0);
     }
 
-    close(client_sock);
+    //close(client_sock);
 }
 
 int main() {
+    //소켓 기술자 
     int server_sock, client_sock;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
+    int clientlen = sizeof(client_addr);
+
     // 소켓 생성
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    memset((char *)&server_addr, '\0', sizeof(server_addr));
+    
+    // 포트 넘버 설정하는곳, inet_addr("192.168.147.129")와 같이 특정 IP와 연결 가능
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
-    listen(server_sock, 1);
+    if((server_sock = socket(AF_INET, SOCK_STREAM,0)) == -1){
+        perror("socket");
+        exit(1);
+    }    
 
-    printf("Waiting for client...\n");
-    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
-    printf("Client connected.\n");
+    if(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr))){
+        perror("bind");
+        exit(1);
+    }   
 
-    handle_client(client_sock);
+    if(listen(server_sock, 1)){
+        perror("listen");
+        exit(1);
+    }
+
+    while(1){
+        printf("Waiting for client...\n");
+        if((client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len))==-1){
+            perror("accept");
+            exit(1);
+        }
+        printf("Client connected.\n");
+        
+        handle_client(client_sock);
+        close(client_sock);
+        printf("Client disconnected.\n");
+    }
+
+    //client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
+
     close(server_sock);
     return 0;
 }

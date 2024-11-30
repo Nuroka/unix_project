@@ -90,9 +90,66 @@ int get_score(Card *hand) {
     if (hand[0].num == 4 && hand[1].num == 10) return 802; // 장사
     if (hand[0].num == 4 && hand[1].num == 6) return 801; // 세륙
 
+    // 특수 패
+    if (hand[0].num == 3 && hand[1].num == 7 && hand[0].special == true && hand[1].special == true) {
+        return 10; // 땡잡이
+    }
+    if (hand[0].num == 4 && hand[1].num == 7 && hand[0].special == true && hand[1].special == true) {
+        return 11; // 암행어사
+    }
+    if (hand[0].num == 4 && hand[1].num == 9 && hand[0].special == true && hand[1].special == true) {
+        return 12; // 멍텅구리구사
+    }
+    if (hand[0].num == 4 && hand[1].num == 9) {
+        return 13; // 49파토
+    }
+    
     // 끗 판별
     int sum = (hand[0].num + hand[1].num) % 10;
     return sum; // 끗 점수 (0~9)
+}
+
+// 승패 계산
+int cmp(int player_score, int com_score) {
+    // 땡잡이
+    if ((player_score == 10 && com_score > 1000 && com_score < 1010) || (com_score == 10 && player_score > 1000 && player_score < 1010)){
+        if (player_score == 10) 
+            return 1;   // player win
+        else 
+            return 2;   // com win
+    }
+    else {
+        if (player_score == 10) 
+            player_score = 0;
+        else if (com_score == 10)
+            com_score = 0;
+    }
+    // 암행어사
+    if ((player_score == 11 && com_score == 3000) || (com_score == 11 && player_score == 3000)){
+        if (player_score == 11) 
+            return 1;
+        else 
+            return 2;
+    }
+    else {
+        if (player_score == 11) 
+            player_score = 1;
+        else if (com_score == 11)
+            com_score = 1;
+    }
+    // 49파토
+    if ((player_score == 13 && com_score < 1000) || (com_score == 13 && player_score < 1000))
+        return 3;   // regame
+    // 멍텅구리구사
+    if ((player_score == 12 && com_score < 1010) || (com_score == 12 && player_score < 1010)){
+        return 3;
+    }
+    if (player_score > com_score) 
+        return 1;
+    else if(player_score == com_score)
+        return 3;
+    else
+        return 2;
 }
 
 void handle_client(int client_sock) {
@@ -113,6 +170,28 @@ void handle_client(int client_sock) {
 
         all = init();
         divider(all, player, com);
+
+        /* test
+        player[0].num = 1;
+        player[0].special = false;
+        strncpy(player[0].name, "1", sizeof(player[0].name) - 1);
+        player[0].name[sizeof(player[0].name) - 1] = '\0';
+
+        player[1].num = 1;
+        player[1].special = true;
+        strncpy(player[1].name, "1+", sizeof(player[1].name) - 1);
+        player[1].name[sizeof(player[1].name) - 1] = '\0';
+
+        com[0].num = 3;
+        com[0].special = true;
+        strncpy(com[0].name, "3+", sizeof(com[0].name) - 1);
+        com[0].name[sizeof(com[0].name) - 1] = '\0';
+
+        com[1].num = 7;
+        com[1].special = true;
+        strncpy(com[1].name, "7+", sizeof(com[1].name) - 1);
+        com[1].name[sizeof(com[1].name) - 1] = '\0';
+        */
 
         // 초기 배팅금액 설정
         state.player_bet = 300;
@@ -140,15 +219,29 @@ void handle_client(int client_sock) {
         } else {
             // 결과 계산
             int player_score = get_score(player);
-            int computer_score = get_score(com);
+            int com_score = get_score(com);
 
-            if (player_score > computer_score) {
+            switch (cmp(player_score, com_score)) {
+                case 1:
+                    state.player_money += state.player_bet;
+                    state.computer_money -= state.player_bet;
+                    break;
+                case 2:
+                    state.computer_money += state.player_bet;
+                    state.player_money -= state.player_bet;
+                    break;
+                default:
+                    break;
+            }
+
+            /*if (player_score > computer_score) {
                 state.player_money += state.player_bet;
                 state.computer_money -= state.player_bet;
             } else {
                 state.computer_money += state.player_bet;
                 state.player_money -= state.player_bet;
             }
+            */
         }
 
         // 상태 전송

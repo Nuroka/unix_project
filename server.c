@@ -41,10 +41,17 @@ void handle_client(int client_sock) {
             int player_score = (state.player_card1 + state.player_card2) % 10;
             int computer_score = (state.computer_card1 + state.computer_card2) % 10;
 
+            // 이겼을때
             if (player_score > computer_score) {
                 state.player_money += state.player_bet;
                 state.computer_money -= state.player_bet;
-            } else {
+            } else { // 졌을때
+                // 플레이어가 배팅한 금액이 본인이 보유한 금액보다 더 클 경우 에러 발생
+                if(state.player_bet > state.player_money){
+                    printf("배팅한 금액이 보유한 금액보다 더 큽니다");
+                    //카드 분배부터 다시?
+                    continue;
+                }
                 state.computer_money += state.player_bet;
                 state.player_money -= state.player_bet;
             }

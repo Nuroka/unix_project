@@ -147,38 +147,17 @@ int cmp(int player_score, int com_score) {
 void handle_client(int client_sock) {
     GameState state;
     Card *all;
-
+    int budget;
+    recv(client_sock, &budget, sizeof(budget), 0);
     // 초기화
-    state.player_money = 10000;
-    state.computer_money = 10000;
+    state.player_money = budget;
+    state.computer_money = budget;
 
     while (state.player_money > 0 && state.computer_money > 0) {
         srand(time(NULL)); // 랜덤 시드 설정
         // 카드 분배
         all = init();
         divider(all, player, com);
-
-        /* test
-        player[0].num = 1;
-        player[0].special = false;
-        strncpy(player[0].name, "1", sizeof(player[0].name) - 1);
-        player[0].name[sizeof(player[0].name) - 1] = '\0';
-
-        player[1].num = 1;
-        player[1].special = true;
-        strncpy(player[1].name, "1+", sizeof(player[1].name) - 1);
-        player[1].name[sizeof(player[1].name) - 1] = '\0';
-
-        com[0].num = 3;
-        com[0].special = true;
-        strncpy(com[0].name, "3+", sizeof(com[0].name) - 1);
-        com[0].name[sizeof(com[0].name) - 1] = '\0';
-
-        com[1].num = 7;
-        com[1].special = true;
-        strncpy(com[1].name, "7+", sizeof(com[1].name) - 1);
-        com[1].name[sizeof(com[1].name) - 1] = '\0';
-        */
 
         // 초기 배팅금액 설정
         state.player_bet1 = 300;
@@ -203,16 +182,21 @@ void handle_client(int client_sock) {
 
         if (state.player_choice1 == DIE) {
             // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
-            state.computer_money += state.player_bet1;
-            state.player_money -= state.player_bet1;
+            if (state.player_money < 300) {
+                state.computer_money += state.player_money;
+                state.player_money == 0;
+            } else {
+                state.computer_money += state.player_bet1;
+                state.player_money -= state.player_bet1;
+            }
         } else {
             // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
             if (state.player_choice2 == DIE) {
                 state.computer_money += state.player_bet1;
                 state.player_money -= state.player_bet1;
             } else {
-                ascending(player); // 카드 정렬
-                ascending(com);
+                Ascending(player); // 카드 정렬
+                Ascending(com);
 
                 // 결과 계산
                 int player_score = get_score(player);   // 플레이저 점수
@@ -254,8 +238,17 @@ int main() {
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
-    listen(server_sock, 1);
+    if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_sock, 1) < 0) {
+        perror("Listen failed");
+        exit(EXIT_FAILURE);
+    }
+    // bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    // listen(server_sock, 1);
 
     printf("Waiting for client...\n");
     client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);

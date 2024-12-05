@@ -2,7 +2,7 @@
 #define GAME_PROTOCOL_H
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+#define IPADDR "127.0.0.1"
 
 // 메시지 타입 정의
 #define CALL 1
@@ -28,10 +28,10 @@ typedef struct {
 } Card;
 
 // 사용자 함수 정의
-void ascending(Card *cards);
+void Ascending(Card *cards);
 
 // 카드 오름차순 정렬 함수
-void ascending(Card *cards) {
+void Ascending(Card *cards) {
     if (cards[0].num > cards[1].num) {
         Card temp;
         temp = cards[0];

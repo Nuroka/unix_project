@@ -14,7 +14,6 @@ void FirstCardPrint();
 void SecondCardPrint();
 void ChoiceCallDIE();
 void GameResult(int temp);
-void ErrorCheck(int num, char* str);
 int Retry();
 void GameOver();
 
@@ -108,8 +107,8 @@ void play_game() {
         }
     } while (Retry());
 
-    printf("\n");
-    printf("Your remaining budget: %d, Computer remaining budget: %d\n", state.player_money, state.computer_money);
+    system("clear");
+    printf("* Your remaining budget: %d, Computer remaining budget: %d *\n", state.player_money, state.computer_money);
     GameOver();
 }
 
@@ -188,13 +187,6 @@ void GameResult(int temp) {
     }
     printf("Round result: Your budget: %d, Computer budget: %d\n", state.player_money, state.computer_money);
     printf("========================================\n");
-}
-
-void ErrorCheck(int num, char* str) {
-    if (num == -1) {
-        perror(str);
-        exit(1);
-    }
 }
 
 int Retry() {

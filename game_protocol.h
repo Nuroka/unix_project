@@ -1,6 +1,7 @@
 #ifndef GAME_PROTOCOL_H
 #define GAME_PROTOCOL_H
 
+#include <stdbool.h>
 #define PORT 8080
 #define IPADDR "127.0.0.1"
 
@@ -29,15 +30,6 @@ typedef struct {
 
 // 사용자 함수 정의
 void Ascending(Card *cards);
-
-// 카드 오름차순 정렬 함수
-void Ascending(Card *cards) {
-    if (cards[0].num > cards[1].num) {
-        Card temp;
-        temp = cards[0];
-        cards[0] = cards[1];
-        cards[1] = temp;
-    }
-}
+void ErrorCheck(int num, char* str);
 
 #endif // GAME_PROTOCOL_H

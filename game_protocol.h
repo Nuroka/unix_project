@@ -12,8 +12,10 @@
 // 데이터 구조 정의
 typedef struct {
     int message_type;
-    int player_bet;
-    int player_choice;
+    int player_bet1;
+    int player_bet2;
+    int player_choice1;
+    int player_choice2;
     int computer_choice;
     int player_money;
     int computer_money;

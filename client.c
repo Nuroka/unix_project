@@ -30,9 +30,14 @@ void play_game(int sock) {
         printf("\nYour first cards: %s\n", player[0].name);
         printf("Your money: %d, Computer money: %d\n", state.player_money, state.computer_money);
 
-        // 첫 번째 행동 선택
-        printf("Enter choice (1 for CALL, 2 for DIE): ");
-        scanf("%d", &state.player_choice1);
+        // 첫 번째 행동 선택 / 1또는 2값 매핑
+        printf("Enter choice (1 for CALL, Not 1 for DIE): ");
+        if (scanf("%d", &state.player_choice1) != 1) {
+            while (getchar() != '\n'); // 입력 버퍼 비우기
+            state.player_choice1 = 2; // 숫자가 아니면 2로 설정
+        } else if (state.player_choice1 != 1) {
+            state.player_choice1 = 2; // 1이 아닌 숫자는 2로 설정
+        }
 
         // CALL
         if (state.player_choice1 == CALL) {
@@ -53,8 +58,13 @@ void play_game(int sock) {
             printf("Cards: %s %s\n", player[0].name, player[1].name);
 
             // 두 번째 행동 선택
-            printf("Enter choice (1 for CALL, 2 for DIE): ");
-            scanf("%d", &state.player_choice2);
+            printf("Enter choice (1 for CALL, Not 1 DIE): ");
+            if (scanf("%d", &state.player_choice2) != 1) {
+                while (getchar() != '\n'); // 입력 버퍼 비우기
+                state.player_choice2 = 2; // 숫자가 아니면 2로 설정
+            } else if (state.player_choice2 != 1) {
+                state.player_choice2 = 2; // 1이 아닌 숫자는 2로 설정
+            }
 
             // CALL
             if (state.player_choice2 == CALL) {

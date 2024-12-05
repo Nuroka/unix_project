@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include "game_protocol.h"
 
+void play_game(int sock);
+
 Card player[2];
 Card com[2];
 
@@ -14,14 +16,15 @@ void play_game(int sock) {
 
     while (1) {
         // 서버로부터 상태 수신
-        /*recv(sock, &state, sizeof(state), 0);
-        recv(sock, &player, sizeof(player), 0);*/
         int header;
         recv(sock, &header, sizeof(header), 0);       // 헤더 수신
         recv(sock, &state, header, 0);                // 상태 수신
 
         recv(sock, &header, sizeof(header), 0);       // 헤더 수신
         recv(sock, &player, header, 0);               // 카드 수신
+
+        recv(sock, &header, sizeof(header), 0);       // 헤더 수신
+        recv(sock, &com, header, 0);                  // 카드 수신
 
         // 첫 번째 카드, 남은 돈 출력
         printf("\nYour first cards: %s\n", player[0].name);
@@ -46,6 +49,7 @@ void play_game(int sock) {
 
             // 손패 전체 출력
             printf("Your second card: %s\n", player[1].name);
+            ascending(player);
             printf("Cards: %s %s\n", player[0].name, player[1].name);
 
             // 두 번째 행동 선택
@@ -74,11 +78,18 @@ void play_game(int sock) {
         recv(sock, &state, sizeof(state), 0);
 
         if (state.message_type == RESULT) {
+            // 손 패로 승패를 정하고 컴퓨터 카드 노출
+            if ((state.player_choice1 == CALL) && (state.player_choice2 == CALL)){
+                ascending(com);
+                printf("Com Cards: %s %s\n", com[0].name, com[1].name);
+            }
+            // 결과 출력
             printf("Round result: Your money: %d, Computer money: %d\n",
                    state.player_money, state.computer_money);
             printf("===========================================================\n");
         }
 
+        // 돈 다 떨어졌을 때
         if (state.player_money <= 0 || state.computer_money <= 0) {
             printf("Game over.\n");
             break;

@@ -7,6 +7,13 @@
 #include <stdbool.h>
 #include "game_protocol.h"
 
+void shuffle(Card *all);
+Card *init(void);
+void divider(Card *all, Card *player, Card *com);
+int get_score(Card *hand);
+int cmp(int player_score, int com_score);
+void handle_client(int client_sock);
+
 Card player[2];
 Card com[2];
 
@@ -46,21 +53,6 @@ void divider(Card *all, Card *player, Card *com) {
     player[1] = all[1];
     com[0] = all[2];
     com[1] = all[3];
-    
-    // 카드 내림차순 재구성
-    if (player[0].num > player[1].num) {
-        Card temp;
-        temp = player[0];
-        player[0] = player[1];
-        player[1] = temp;
-    }
-    if (com[0].num > com[1].num) {
-        Card temp;
-        temp = com[0];
-        com[0] = com[1];
-        com[1] = temp;
-    }
-    
 }
 
 // 손패 계산
@@ -154,7 +146,6 @@ int cmp(int player_score, int com_score) {
 
 void handle_client(int client_sock) {
     GameState state;
-    srand(time(NULL)); // 랜덤 시드 설정
     Card *all;
 
     // 초기화
@@ -162,7 +153,7 @@ void handle_client(int client_sock) {
     state.computer_money = 10000;
 
     while (state.player_money > 0 && state.computer_money > 0) {
-        
+        srand(time(NULL)); // 랜덤 시드 설정
         // 카드 분배
         all = init();
         divider(all, player, com);
@@ -190,42 +181,57 @@ void handle_client(int client_sock) {
         */
 
         // 초기 배팅금액 설정
-        state.player_bet = 300;
+        state.player_bet1 = 300;
         state.computer_choice = CALL;
 
         // 상태 전송
         int header;
         header = sizeof(state);
         send(client_sock, &header, sizeof(header), 0); // 헤더 전송
-        send(client_sock, &state, sizeof(state), 0);  // 상태 전송
+        send(client_sock, &state, sizeof(state), 0);   // 상태 전송
 
         header = sizeof(player);
         send(client_sock, &header, sizeof(header), 0); // 헤더 전송
-        send(client_sock, &player, sizeof(player), 0); // 카드 전송
+        send(client_sock, &player, sizeof(player), 0); // player 카드 전송
+
+        header = sizeof(com);
+        send(client_sock, &header, sizeof(header), 0); // 헤더 전송
+        send(client_sock, &com, sizeof(com), 0);       // com 카드 전송
 
         // 클라이언트 행동 수신
         recv(client_sock, &state, sizeof(state), 0);
 
-        if (state.player_choice == DIE) {
-            // 플레이어 die, 컴퓨터 승리
-            state.computer_money += state.player_bet;
-            state.player_money -= state.player_bet;
+        if (state.player_choice1 == DIE) {
+            // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            state.computer_money += state.player_bet1;
+            state.player_money -= state.player_bet1;
         } else {
-            // 결과 계산
-            int player_score = get_score(player);
-            int com_score = get_score(com);
+            // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            if (state.player_choice2 == DIE) {
+                state.computer_money += state.player_bet1;
+                state.player_money -= state.player_bet1;
+            } else {
+                ascending(player); // 카드 정렬
+                ascending(com);
 
-            switch (cmp(player_score, com_score)) {
-                case 1:
-                    state.player_money += state.player_bet;
-                    state.computer_money -= state.player_bet;
-                    break;
-                case 2:
-                    state.computer_money += state.player_bet;
-                    state.player_money -= state.player_bet;
-                    break;
-                default:
-                    break;
+                // 결과 계산
+                int player_score = get_score(player);   // 플레이저 점수
+                int com_score = get_score(com);         // 컴퓨터 점수
+
+                int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총 액수
+
+                switch (cmp(player_score, com_score)) {
+                    case 1:     // 플레이서 승리
+                        state.player_money += player_bet;
+                        state.computer_money -= player_bet;
+                        break;
+                    case 2:     // 플레이어 패배
+                        state.computer_money += player_bet;
+                        state.player_money -= player_bet;
+                        break;
+                    default:    // 무승부, 49파토, 멍텅구리구사
+                        break;
+                }
             }
         }
 

@@ -27,4 +27,17 @@ typedef struct {
     char name[15];
 } Card;
 
+// 사용자 함수 정의
+void ascending(Card *cards);
+
+// 카드 오름차순 정렬 함수
+void ascending(Card *cards) {
+    if (cards[0].num > cards[1].num) {
+        Card temp;
+        temp = cards[0];
+        cards[0] = cards[1];
+        cards[1] = temp;
+    }
+}
+
 #endif // GAME_PROTOCOL_H

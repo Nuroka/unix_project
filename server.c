@@ -162,12 +162,8 @@ void handle_client(int client_sock) {
     state.computer_money = 10000;
 
     while (state.player_money > 0 && state.computer_money > 0) {
+        
         // 카드 분배
-        /*state.computer_card1 = rand() % 10 + 1;
-        state.computer_card2 = rand() % 10 + 1;
-        state.player_card1 = rand() % 10 + 1;
-        state.player_card2 = rand() % 10 + 1;*/
-
         all = init();
         divider(all, player, com);
 
@@ -198,8 +194,6 @@ void handle_client(int client_sock) {
         state.computer_choice = CALL;
 
         // 상태 전송
-        /*send(client_sock, &state, sizeof(state), 0);
-        send(client_sock, &player, sizeof(player), 0);*/
         int header;
         header = sizeof(state);
         send(client_sock, &header, sizeof(header), 0); // 헤더 전송
@@ -233,15 +227,6 @@ void handle_client(int client_sock) {
                 default:
                     break;
             }
-
-            /*if (player_score > computer_score) {
-                state.player_money += state.player_bet;
-                state.computer_money -= state.player_bet;
-            } else {
-                state.computer_money += state.player_bet;
-                state.player_money -= state.player_bet;
-            }
-            */
         }
 
         // 상태 전송

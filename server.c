@@ -278,10 +278,105 @@ void PlayGame() {
         ErrorCheck(send(client_sock, &com, sizeof(com), 0), "Send Computer Card");      // com 카드 전송
 
         // 클라이언트 행동 수신
+<<<<<<< HEAD
         ErrorCheck(recv(client_sock, &state, sizeof(state), 0), "Receive State");
         
         Result(); // 승패 계산
         // 결과 전송
         ErrorCheck(send(client_sock, &state, sizeof(state), 0), "Send Result");
     } while (ReceiveRetry());
+=======
+        recv(client_sock, &state, sizeof(state), 0);
+
+        if (state.player_choice1 == DIE) {
+            // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            state.computer_money += state.player_bet1;
+            state.player_money -= state.player_bet1;
+        } else {
+            // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            if (state.player_choice2 == DIE) {
+                state.computer_money += state.player_bet1;
+                state.player_money -= state.player_bet1;
+            } else {
+                ascending(player); // 카드 정렬
+                ascending(com);
+
+                // 결과 계산
+                int player_score = get_score(player);   // 플레이저 점수
+                int com_score = get_score(com);         // 컴퓨터 점수
+
+                int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총 액수
+
+                switch (cmp(player_score, com_score)) {
+                    case 1:     // 플레이서 승리
+                        state.player_money += player_bet;
+                        state.computer_money -= player_bet;
+                        break;
+                    case 2:     // 플레이어 패배
+                        state.computer_money += player_bet;
+                        state.player_money -= player_bet;
+                        break;
+                    default:    // 무승부, 49파토, 멍텅구리구사
+                        break;
+                }
+            }
+        }
+
+        // 상태 전송
+        state.message_type = RESULT;
+        send(client_sock, &state, sizeof(state), 0);
+    }
+
+    //close(client_sock);
+}
+
+int main() {
+    //소켓 기술자 
+    int server_sock, client_sock;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+
+    int clientlen = sizeof(client_addr);
+
+    // 소켓 생성
+    memset((char *)&server_addr, '\0', sizeof(server_addr));
+    
+    // 포트 넘버 설정하는곳, inet_addr("192.168.147.129")와 같이 특정 IP와 연결 가능
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if((server_sock = socket(AF_INET, SOCK_STREAM,0)) == -1){
+        perror("socket");
+        exit(1);
+    }    
+
+    if(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr))){
+        perror("bind");
+        exit(1);
+    }   
+
+    if(listen(server_sock, 1)){
+        perror("listen");
+        exit(1);
+    }
+
+    while(1){
+        printf("Waiting for client...\n");
+        if((client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len))==-1){
+            perror("accept");
+            exit(1);
+        }
+        printf("Client connected.\n");
+        
+        handle_client(client_sock);
+        close(client_sock);
+        printf("Client disconnected.\n");
+    }
+
+    //client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
+
+    close(server_sock);
+    return 0;
+>>>>>>> b069efae18bf8d3b1b0a4214e17f82a824a22d09
 }

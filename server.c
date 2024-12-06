@@ -10,7 +10,7 @@
 /* 함수 프로토타입 */
 void SetServer();           // 서버 설정
 void ReceiveBudget();       // 예산 수신
-int ReceiveRetry();         // 재도전 여부 확인
+int ReceiveRetry();         // 재시작 여부 확인
 void Result();              // 게임 결과 계산
 void PrintResult(int num);  // 결과 출력
 void Shuffle(Card *all);    // 카드 섞기
@@ -22,9 +22,9 @@ void PlayGame();            // 게임 실행
 
 
 /* 전역 변수 */
-Card player[2];             // 플레이어 카드
-Card com[2];                // 컴퓨터 카드
-GameState state;            // 게임 상태
+Card player[2];                 // 플레이어 카드
+Card com[2];                    // 컴퓨터 카드
+GameState state;                // 게임 상태
 int server_sock, client_sock;   // 서버, 클라이언트 소켓 디스크립터
 
 int main() {
@@ -64,9 +64,9 @@ void SetServer() {
     ErrorCheck(server_sock, "Socket");  // 에러 처리
 
     memset((char *)&server_addr, '\0', sizeof(server_addr));    // 구조체 초기화
-    server_addr.sin_family = AF_INET;   // IPv4
-    server_addr.sin_port = htons(PORT); // 9000
-    server_addr.sin_addr.s_addr = inet_addr(IPADDR);    // 127.0.0.1
+    server_addr.sin_family = AF_INET;   // IPv4 인터넷 프로토콜
+    server_addr.sin_port = htons(PORT); // NBO 변환, 포트번호 설정
+    server_addr.sin_addr.s_addr = inet_addr(IPADDR);    // IP 주소 설정
 
     ErrorCheck(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)), "Bind"); // 소켓 바인딩
     ErrorCheck(listen(server_sock, 1), "Listen");   // 연결 대기상태로 전환
@@ -74,16 +74,18 @@ void SetServer() {
 
 // 예산 수신
 void ReceiveBudget() {
-    ErrorCheck(recv(client_sock, &state.budget, sizeof(state.budget), 0), "Receive Budget");
+    ErrorCheck(recv(client_sock, &state.budget, sizeof(state.budget), 0), "Receive Budget");    // 클라이언트로부터 설정 예산 수신
+    // 수신받은 예산 출력
     printf("\n");
     printf("****************************************\n");
     printf("        Player's budget is %d\n", state.budget);
     printf("****************************************\n");
 }
 
-// 재도전 여부 수신
+// 재시작 여부 수신 (0: end, 1: retry)
 int ReceiveRetry() {
     int retry;
+    // 클라이언트로부터 재시작 여부 수신
     ErrorCheck(recv(client_sock, &retry, sizeof(retry), 0), "Receive Retry");
 
     return retry;
@@ -181,7 +183,7 @@ Card *Init(void){
         all[i].num = card_num[i];
         all[i].special = power[i];
         strncpy(all[i].name, name[i], sizeof(all[i].name) - 1); // 문자열 복사
-        all[i].name[sizeof(all[i].name) - 1] = '\0'; // NULL 문자 추가
+        all[i].name[sizeof(all[i].name) - 1] = '\0';            // NULL 문자 추가
     }
     return all;
 }
@@ -267,7 +269,7 @@ void PlayGame() {
         Divider(all); // 카드 분배
         state.player_bet1 = 300;    // 초기 배팅금액 설정
 
-        // 데이터 구분해서 전송
+        // 데이터 구분해서 전송(헤더로 전송할 데이터의 사이즈를 먼저 전송)
         int header;
         header = sizeof(state);
         ErrorCheck(send(client_sock, &header, sizeof(header), 0), "Send Header");       // 헤더 전송
@@ -286,5 +288,5 @@ void PlayGame() {
         
         Result(); // 결과 계산 및 출력
         ErrorCheck(send(client_sock, &state, sizeof(state), 0), "Send Result");         // 결과 전송
-    } while (ReceiveRetry());   // 재도전 여부 수신
+    } while (ReceiveRetry());   // 재시작 여부 수신
 }

@@ -61,12 +61,11 @@ void Intro() {
     printf("* Enjoy playing Seotda with computer.  *\n");
     printf("*                                      *\n");
     printf("****************************************\n");
-    sleep(4);
 }
 
 // 예산 설정 및 전송
 void SendBudget(){
-    system("clear");
+    printf("\n");
     printf("Set budget: ");
     // 입력 예외 처리 / 양수만 입력
     while (scanf("%d", &state.budget) != 1 || state.budget <= 0) {

@@ -29,15 +29,14 @@ int server_sock, client_sock;   // 서버, 클라이언트 소켓 디스크립�
 
 int main() {
 
-    system("clear");
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
     SetServer();    // 서버 초기화
 
     // 반복 실행 서버
     while(1) {
-        // system("clear");
-        printf("\n========================================\n");
+        system("clear");    // 화면 초기화
+        printf("========================================\n");
         printf("Ready to connect...\n");
         // 서버 - 클라이언트 연결
         client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
@@ -49,7 +48,8 @@ int main() {
         PlayGame();         // 게임 실행
         close(client_sock); // 클라이언트 소켓 닫기
         printf("\n* Disconnected *\n");
-        printf("\n========================================\n");
+        printf("========================================\n");
+        sleep(3);
     }
 
     close(server_sock);     // 서버 소켓 닫기

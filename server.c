@@ -7,6 +7,13 @@
 #include <stdbool.h>
 #include "game_protocol.h"
 
+void shuffle(Card *all);
+Card *init(void);
+void divider(Card *all, Card *player, Card *com);
+int get_score(Card *hand);
+int cmp(int player_score, int com_score);
+void handle_client(int client_sock);
+
 Card player[2];
 Card com[2];
 
@@ -46,21 +53,6 @@ void divider(Card *all, Card *player, Card *com) {
     player[1] = all[1];
     com[0] = all[2];
     com[1] = all[3];
-    
-    // 카드 내림차순 재구성
-    if (player[0].num > player[1].num) {
-        Card temp;
-        temp = player[0];
-        player[0] = player[1];
-        player[1] = temp;
-    }
-    if (com[0].num > com[1].num) {
-        Card temp;
-        temp = com[0];
-        com[0] = com[1];
-        com[1] = temp;
-    }
-    
 }
 
 // 손패 계산
@@ -90,14 +82,70 @@ int get_score(Card *hand) {
     if (hand[0].num == 4 && hand[1].num == 10) return 802; // 장사
     if (hand[0].num == 4 && hand[1].num == 6) return 801; // 세륙
 
+    // 특수 패
+    if (hand[0].num == 3 && hand[1].num == 7 && hand[0].special == true && hand[1].special == true) {
+        return 10; // 땡잡이
+    }
+    if (hand[0].num == 4 && hand[1].num == 7 && hand[0].special == true && hand[1].special == true) {
+        return 11; // 암행어사
+    }
+    if (hand[0].num == 4 && hand[1].num == 9 && hand[0].special == true && hand[1].special == true) {
+        return 12; // 멍텅구리구사
+    }
+    if (hand[0].num == 4 && hand[1].num == 9) {
+        return 13; // 49파토
+    }
+    
     // 끗 판별
     int sum = (hand[0].num + hand[1].num) % 10;
     return sum; // 끗 점수 (0~9)
 }
 
+// 승패 계산
+int cmp(int player_score, int com_score) {
+    // 땡잡이
+    if ((player_score == 10 && com_score > 1000 && com_score < 1010) || (com_score == 10 && player_score > 1000 && player_score < 1010)){
+        if (player_score == 10) 
+            return 1;   // player win
+        else 
+            return 2;   // com win
+    }
+    else {
+        if (player_score == 10) 
+            player_score = 0;
+        else if (com_score == 10)
+            com_score = 0;
+    }
+    // 암행어사
+    if ((player_score == 11 && com_score == 3000) || (com_score == 11 && player_score == 3000)){
+        if (player_score == 11) 
+            return 1;
+        else 
+            return 2;
+    }
+    else {
+        if (player_score == 11) 
+            player_score = 1;
+        else if (com_score == 11)
+            com_score = 1;
+    }
+    // 49파토
+    if ((player_score == 13 && com_score < 1000) || (com_score == 13 && player_score < 1000))
+        return 3;   // regame
+    // 멍텅구리구사
+    if ((player_score == 12 && com_score < 1010) || (com_score == 12 && player_score < 1010)){
+        return 3;
+    }
+    if (player_score > com_score) 
+        return 1;
+    else if(player_score == com_score)
+        return 3;
+    else
+        return 2;
+}
+
 void handle_client(int client_sock) {
     GameState state;
-    srand(time(NULL)); // 랜덤 시드 설정
     Card *all;
 
     // 초기화
@@ -105,56 +153,85 @@ void handle_client(int client_sock) {
     state.computer_money = 10000;
 
     while (state.player_money > 0 && state.computer_money > 0) {
+        srand(time(NULL)); // 랜덤 시드 설정
         // 카드 분배
-        /*state.computer_card1 = rand() % 10 + 1;
-        state.computer_card2 = rand() % 10 + 1;
-        state.player_card1 = rand() % 10 + 1;
-        state.player_card2 = rand() % 10 + 1;*/
-
         all = init();
         divider(all, player, com);
 
+        /* test
+        player[0].num = 1;
+        player[0].special = false;
+        strncpy(player[0].name, "1", sizeof(player[0].name) - 1);
+        player[0].name[sizeof(player[0].name) - 1] = '\0';
+
+        player[1].num = 1;
+        player[1].special = true;
+        strncpy(player[1].name, "1+", sizeof(player[1].name) - 1);
+        player[1].name[sizeof(player[1].name) - 1] = '\0';
+
+        com[0].num = 3;
+        com[0].special = true;
+        strncpy(com[0].name, "3+", sizeof(com[0].name) - 1);
+        com[0].name[sizeof(com[0].name) - 1] = '\0';
+
+        com[1].num = 7;
+        com[1].special = true;
+        strncpy(com[1].name, "7+", sizeof(com[1].name) - 1);
+        com[1].name[sizeof(com[1].name) - 1] = '\0';
+        */
+
         // 초기 배팅금액 설정
-        state.player_bet = 300;
+        state.player_bet1 = 300;
         state.computer_choice = CALL;
 
         // 상태 전송
-        /*send(client_sock, &state, sizeof(state), 0);
-        send(client_sock, &player, sizeof(player), 0);*/
         int header;
         header = sizeof(state);
         send(client_sock, &header, sizeof(header), 0); // 헤더 전송
-        send(client_sock, &state, sizeof(state), 0);  // 상태 전송
+        send(client_sock, &state, sizeof(state), 0);   // 상태 전송
 
         header = sizeof(player);
         send(client_sock, &header, sizeof(header), 0); // 헤더 전송
-        send(client_sock, &player, sizeof(player), 0); // 카드 전송
+        send(client_sock, &player, sizeof(player), 0); // player 카드 전송
+
+        header = sizeof(com);
+        send(client_sock, &header, sizeof(header), 0); // 헤더 전송
+        send(client_sock, &com, sizeof(com), 0);       // com 카드 전송
 
         // 클라이언트 행동 수신
         recv(client_sock, &state, sizeof(state), 0);
 
-        if (state.player_choice == DIE) {
-            // 플레이어 die, 컴퓨터 승리
-            state.computer_money += state.player_bet;
-            state.player_money -= state.player_bet;
+        if (state.player_choice1 == DIE) {
+            // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            state.computer_money += state.player_bet1;
+            state.player_money -= state.player_bet1;
         } else {
-            // 결과 계산
-            int player_score = get_score(player);
-            int computer_score = get_score(com);
+            // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
+            if (state.player_choice2 == DIE) {
+                state.computer_money += state.player_bet1;
+                state.player_money -= state.player_bet1;
+            } else {
+                ascending(player); // 카드 정렬
+                ascending(com);
 
-            // 이겼을때
-            if (player_score > computer_score) {
-                state.player_money += state.player_bet;
-                state.computer_money -= state.player_bet;
-            } else { // 졌을때
-                // 플레이어가 배팅한 금액이 본인이 보유한 금액보다 더 클 경우 에러 발생
-                if(state.player_bet > state.player_money){
-                    printf("배팅한 금액이 보유한 금액보다 더 큽니다");
-                    //카드 분배부터 다시?
-                    continue;
+                // 결과 계산
+                int player_score = get_score(player);   // 플레이저 점수
+                int com_score = get_score(com);         // 컴퓨터 점수
+
+                int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총 액수
+
+                switch (cmp(player_score, com_score)) {
+                    case 1:     // 플레이서 승리
+                        state.player_money += player_bet;
+                        state.computer_money -= player_bet;
+                        break;
+                    case 2:     // 플레이어 패배
+                        state.computer_money += player_bet;
+                        state.player_money -= player_bet;
+                        break;
+                    default:    // 무승부, 49파토, 멍텅구리구사
+                        break;
                 }
-                state.computer_money += state.player_bet;
-                state.player_money -= state.player_bet;
             }
         }
 

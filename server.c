@@ -7,48 +7,52 @@
 #include <stdbool.h>
 #include "game_protocol.h"
 
-void SetServer();
-void ReceiveBudget();
-int ReceiveRetry();
-void Result();
-void PrintResult(int num);
-void Shuffle(Card *all);
-Card *Init(void);
-void Divider(Card *all);
-int GetScore(Card *hand);
-int CompareScore(int player_score, int com_score);
-void PlayGame();
+/* 함수 프로토타입 */
+void SetServer();           // 서버 설정
+void ReceiveBudget();       // 예산 수신
+int ReceiveRetry();         // 재도전 여부 확인
+void Result();              // 게임 결과 계산
+void PrintResult(int num);  // 결과 출력
+void Shuffle(Card *all);    // 카드 섞기
+Card *Init(void);           // 카드 초기화
+void Divider(Card *all);    // 카드 분배
+int GetScore(Card *hand);   // 점수 계산
+int CompareScore(int player_score, int com_score);  // 점수 비교
+void PlayGame();            // 게임 실행
 
-Card player[2];
-Card com[2];
-GameState state;
 
-int server_sock, client_sock;
+/* 전역 변수 */
+Card player[2];             // 플레이어 카드
+Card com[2];                // 컴퓨터 카드
+GameState state;            // 게임 상태
+int server_sock, client_sock;   // 서버, 클라이언트 소켓 디스크립터
 
 int main() {
 
     system("clear");
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
-    SetServer();
+    SetServer();    // 서버 초기화
 
     // 반복 실행 서버
     while(1) {
         // system("clear");
         printf("\n========================================\n");
         printf("Ready to connect...\n");
+        // 서버 - 클라이언트 연결
         client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
-        ErrorCheck(client_sock, "Accept");
+        ErrorCheck(client_sock, "Accept");  // 에러 처리
         printf("* Connection Success *\n");
+        // 클라이언트 IP, PORT 출력
         printf("Client IP: %s, PORT: %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         
-        PlayGame();
-        close(client_sock);
+        PlayGame();         // 게임 실행
+        close(client_sock); // 클라이언트 소켓 닫기
         printf("\n* Disconnected *\n");
         printf("\n========================================\n");
     }
 
-    close(server_sock);
+    close(server_sock);     // 서버 소켓 닫기
     return 0;
 }
 
@@ -56,16 +60,16 @@ int main() {
 void SetServer() {
     struct sockaddr_in server_addr;
 
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
-    ErrorCheck(server_sock, "Socket");
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);  // 소켓 생성
+    ErrorCheck(server_sock, "Socket");  // 에러 처리
 
-    memset((char *)&server_addr, '\0', sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr(IPADDR);
+    memset((char *)&server_addr, '\0', sizeof(server_addr));    // 구조체 초기화
+    server_addr.sin_family = AF_INET;   // IPv4
+    server_addr.sin_port = htons(PORT); // 9000
+    server_addr.sin_addr.s_addr = inet_addr(IPADDR);    // 127.0.0.1
 
-    ErrorCheck(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)), "Bind");
-    ErrorCheck(listen(server_sock, 1), "Listen");
+    ErrorCheck(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)), "Bind"); // 소켓 바인딩
+    ErrorCheck(listen(server_sock, 1), "Listen");   // 연결 대기상태로 전환
 }
 
 // 예산 수신
@@ -77,6 +81,7 @@ void ReceiveBudget() {
     printf("****************************************\n");
 }
 
+// 재도전 여부 수신
 int ReceiveRetry() {
     int retry;
     ErrorCheck(recv(client_sock, &retry, sizeof(retry), 0), "Receive Retry");
@@ -84,13 +89,13 @@ int ReceiveRetry() {
     return retry;
 }
 
-// 결과 도출
+// 게임 결과 계산
 void Result() {
     if (state.player_choice1 == DIE) {
-        // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
-        PrintResult(2);
+        // 첫 번째 배팅에서 플레이어가 죽은 경우
+        PrintResult(2); // 컴퓨터 승리 출력
         if (state.player_money < 300) { 
-            // 보유금액 300 미만일 때
+            // 플레이어 보유금액 300 미만인 경우
             state.computer_money += state.player_money;
             state.player_money = 0;
         } else {
@@ -98,20 +103,20 @@ void Result() {
             state.player_money -= state.player_bet1;
         }
     } else {
-        // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
+        // 두 번째 배팅에서 플레이어가 죽은 경우
         if (state.player_choice2 == DIE) {
             state.computer_money += state.player_bet1;
             state.player_money -= state.player_bet1;
             PrintResult(2);
         } else {
-            Ascending(player); // 카드 정렬
+            Ascending(player); // 카드 오름차순 정렬
             Ascending(com);
 
             // 결과 계산
-            int player_score = GetScore(player);   // 플레이저 점수
-            int com_score = GetScore(com);         // 컴퓨터 점수
+            int player_score = GetScore(player);   // 플레이저 점수 계산
+            int com_score = GetScore(com);         // 컴퓨터 점수 계산
 
-            int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총 액수
+            int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총액
 
             switch (CompareScore(player_score, com_score)) {
                 case 1:     // 플레이서 승리
@@ -132,7 +137,7 @@ void Result() {
     }
 }
 
-// 판마다 결과 출력
+// 결과 출력
 void PrintResult(int num) {
     printf("\n");
     printf("========================================\n");
@@ -176,7 +181,7 @@ Card *Init(void){
         all[i].num = card_num[i];
         all[i].special = power[i];
         strncpy(all[i].name, name[i], sizeof(all[i].name) - 1); // 문자열 복사
-        all[i].name[sizeof(all[i].name) - 1] = '\0'; // NULL 문자 보장
+        all[i].name[sizeof(all[i].name) - 1] = '\0'; // NULL 문자 추가
     }
     return all;
 }
@@ -245,11 +250,12 @@ int CompareScore(int player_score, int com_score) {
     else return 2;
 }
 
+// 게임 실행
 void PlayGame() {
     Card *all;
     all = Init(); // 카드 초기화
     
-    ReceiveBudget(); // 플레이어 예산 수신
+    ReceiveBudget(); // 예산 수신
     state.player_money = state.budget;
     state.computer_money = state.budget;
     state.computer_choice = CALL;
@@ -259,9 +265,7 @@ void PlayGame() {
         
         Shuffle(all); // 카드 섞기
         Divider(all); // 카드 분배
-
-        // 초기 배팅금액 설정
-        state.player_bet1 = 300;
+        state.player_bet1 = 300;    // 초기 배팅금액 설정
 
         // 데이터 구분해서 전송
         int header;
@@ -278,105 +282,9 @@ void PlayGame() {
         ErrorCheck(send(client_sock, &com, sizeof(com), 0), "Send Computer Card");      // com 카드 전송
 
         // 클라이언트 행동 수신
-<<<<<<< HEAD
         ErrorCheck(recv(client_sock, &state, sizeof(state), 0), "Receive State");
         
-        Result(); // 승패 계산
-        // 결과 전송
-        ErrorCheck(send(client_sock, &state, sizeof(state), 0), "Send Result");
-    } while (ReceiveRetry());
-=======
-        recv(client_sock, &state, sizeof(state), 0);
-
-        if (state.player_choice1 == DIE) {
-            // 첫 번째 배팅 / 플레이어 die, 컴퓨터 승리
-            state.computer_money += state.player_bet1;
-            state.player_money -= state.player_bet1;
-        } else {
-            // 두 번째 배팅 / 플레이어 die, 컴퓨터 승리
-            if (state.player_choice2 == DIE) {
-                state.computer_money += state.player_bet1;
-                state.player_money -= state.player_bet1;
-            } else {
-                ascending(player); // 카드 정렬
-                ascending(com);
-
-                // 결과 계산
-                int player_score = get_score(player);   // 플레이저 점수
-                int com_score = get_score(com);         // 컴퓨터 점수
-
-                int player_bet = state.player_bet1 + state.player_bet2; // 배팅 총 액수
-
-                switch (cmp(player_score, com_score)) {
-                    case 1:     // 플레이서 승리
-                        state.player_money += player_bet;
-                        state.computer_money -= player_bet;
-                        break;
-                    case 2:     // 플레이어 패배
-                        state.computer_money += player_bet;
-                        state.player_money -= player_bet;
-                        break;
-                    default:    // 무승부, 49파토, 멍텅구리구사
-                        break;
-                }
-            }
-        }
-
-        // 상태 전송
-        state.message_type = RESULT;
-        send(client_sock, &state, sizeof(state), 0);
-    }
-
-    //close(client_sock);
-}
-
-int main() {
-    //소켓 기술자 
-    int server_sock, client_sock;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len = sizeof(client_addr);
-
-    int clientlen = sizeof(client_addr);
-
-    // 소켓 생성
-    memset((char *)&server_addr, '\0', sizeof(server_addr));
-    
-    // 포트 넘버 설정하는곳, inet_addr("192.168.147.129")와 같이 특정 IP와 연결 가능
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-
-    if((server_sock = socket(AF_INET, SOCK_STREAM,0)) == -1){
-        perror("socket");
-        exit(1);
-    }    
-
-    if(bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr))){
-        perror("bind");
-        exit(1);
-    }   
-
-    if(listen(server_sock, 1)){
-        perror("listen");
-        exit(1);
-    }
-
-    while(1){
-        printf("Waiting for client...\n");
-        if((client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len))==-1){
-            perror("accept");
-            exit(1);
-        }
-        printf("Client connected.\n");
-        
-        handle_client(client_sock);
-        close(client_sock);
-        printf("Client disconnected.\n");
-    }
-
-    //client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &addr_len);
-
-    close(server_sock);
-    return 0;
->>>>>>> b069efae18bf8d3b1b0a4214e17f82a824a22d09
+        Result(); // 결과 계산 및 출력
+        ErrorCheck(send(client_sock, &state, sizeof(state), 0), "Send Result");         // 결과 전송
+    } while (ReceiveRetry());   // 재도전 여부 수신
 }

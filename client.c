@@ -9,7 +9,7 @@
 void Connect();
 void Intro();
 void SendBudget();
-void play_game();
+void Play();
 void FirstCardPrint();
 void SecondCardPrint();
 void ChoiceCallDIE();
@@ -21,7 +21,6 @@ Card player[2];
 Card com[2];
 GameState state;
 int sd;
-int budget;
 
 int main() {
     
@@ -29,7 +28,7 @@ int main() {
     Connect();
     Intro();
     SendBudget();
-    play_game(sd);
+    Play();
 
     close(sd);
     return 0;
@@ -39,13 +38,13 @@ void Connect() {
     struct sockaddr_in server_addr;
 
     sd = socket(AF_INET, SOCK_STREAM, 0);
-    ErrorCheck(sd, "socket");
+    ErrorCheck(sd, "Socket");
 
     memset((char *)&server_addr, '\0', sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr(IPADDR);
-    ErrorCheck(connect(sd, (struct sockaddr*)&server_addr, sizeof(server_addr)), "connect");
+    ErrorCheck(connect(sd, (struct sockaddr*)&server_addr, sizeof(server_addr)), "Connect");
 }
 
 void Intro() {
@@ -57,25 +56,26 @@ void Intro() {
     printf("* Enjoy playing Seotda with computer.  *\n");
     printf("*                                      *\n");
     printf("****************************************\n");
-    sleep(5);
+    sleep(4);
 }
 
 void SendBudget(){
-    int budget;
-
     system("clear");
-    printf("Set budget (10000 or more): ");
-    scanf("%d", &budget);
+    printf("Set budget: ");
+    while (scanf("%d", &state.budget) != 1 || state.budget <= 0) {
+        printf("Invalid input. Please enter a positive number: ");
+        while (getchar() != '\n'); // 입력 버퍼 비우기
+    }
 
-    ErrorCheck(send(sd, &budget, sizeof(budget), 0), "Send Budget");
+    ErrorCheck(send(sd, &state.budget, sizeof(state.budget), 0), "Send Budget");
 }
 
-void play_game() {
+void Play() {
     do {
         system("clear");
 
-        int header;
         // 서버로부터 상태 수신
+        int header;
         ErrorCheck(recv(sd, &header, sizeof(header), 0), "Receive Header");   // 헤더 수신
         ErrorCheck(recv(sd, &state, header, 0), "Receive State");             // 상태 수신
         // 플레이어 카드 수신
@@ -92,19 +92,12 @@ void play_game() {
         // 서버로 상태 전송
         ErrorCheck(send(sd, &state, sizeof(state), 0), "Send State");
         int temp = state.player_money;
+
         // 서버로부터 결과 수신
         ErrorCheck(recv(sd, &state, sizeof(state), 0), "Receive State");
 
-        if (state.message_type == RESULT) {
-            GameResult(temp);
-        }
+        GameResult(temp); // 결과 출력
 
-        // 돈 다 떨어졌을 때
-        if (state.player_money == 0 || state.computer_money == 0) {
-            GameOver();
-            close(sd);
-            exit(0);
-        }
     } while (Retry());
 
     system("clear");
@@ -121,7 +114,7 @@ void FirstCardPrint() {
 void SecondCardPrint() {
     printf("\nYour Second Card: %s\n", player[1].name);
     Ascending(player);
-    printf("Your Card: %s, %s\n", player[0].name, player[1].name);
+    printf("Your Cards: %s, %s\n", player[0].name, player[1].name);
 }
 
 void ChoiceCallDIE() {
@@ -191,6 +184,15 @@ void GameResult(int temp) {
 
 int Retry() {
     int retry;
+
+    if (state.player_money == 0 || state.computer_money == 0) {
+        
+        retry = 0;
+        ErrorCheck(send(sd, &retry, sizeof(retry), 0), "Send Retry");
+        sleep(3);
+        return retry;
+    }
+
     printf("\n");
     printf("Your remaining budget is %d\n", state.player_money);
     printf("If you want to play continue playing press 1 (1 : Continue, 2 : Quit): ");
@@ -200,7 +202,8 @@ int Retry() {
     } else if (retry != 1) {
         retry = 0; // 1이 아닌 숫자는 0으로 설정
     }
-    
+    ErrorCheck(send(sd, &retry, sizeof(retry), 0), "Send Retry");
+
     return retry;
 }
 

@@ -2,17 +2,16 @@
 #define GAME_PROTOCOL_H
 
 #include <stdbool.h>
-#define PORT 8080
+#define PORT 9000
 #define IPADDR "127.0.0.1"
 
 // 메시지 타입 정의
 #define CALL 1
 #define DIE 2
-#define RESULT 3
 
 // 데이터 구조 정의
 typedef struct {
-    int message_type;
+    int budget;
     int player_bet1;
     int player_bet2;
     int player_choice1;
